@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0d0e12">
+  <meta name="description" content="Turn an open-eyes image and a blink image into an exact 8.6-second MP4.">
+  <title>BlinkCut</title>
+  <style>:root {
+  color-scheme: dark;
+  --bg: #0d0e12;
+  --panel: rgba(24, 25, 31, 0.88);
+  --panel-border: #2a2c35;
+  --muted: #91939e;
+  --text: #f7f7f9;
+  --purple: #9c7cff;
+  --purple-strong: #7c5cff;
+  --green: #5ce3a5;
+  --radius: 22px;
+}
+
+* { box-sizing: border-box; }
+
+html { min-height: 100%; background: var(--bg); }
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  background:
+    radial-gradient(circle at 50% -20%, rgba(117, 83, 226, .15), transparent 38%),
+    var(--bg);
+  color: var(--text);
+  font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+button, input { font: inherit; }
+button { -webkit-tap-highlight-color: transparent; }
+
+.ambient {
+  position: fixed;
+  z-index: 0;
+  width: 340px;
+  height: 340px;
+  border-radius: 50%;
+  filter: blur(100px);
+  opacity: .09;
+  pointer-events: none;
+}
+.ambient-one { left: -170px; top: 35%; background: #7454ff; }
+.ambient-two { right: -170px; top: 8%; background: #bb6cff; }
+
+.app-shell {
+  position: relative;
+  z-index: 1;
+  width: min(1180px, calc(100% - 40px));
+  margin: 0 auto;
+  padding: max(20px, env(safe-area-inset-top)) 0 max(42px, env(safe-area-inset-bottom));
+}
+
+.topbar { display: flex; align-items: center; justify-content: space-between; }
+.brand { display: inline-flex; align-items: center; gap: 11px; color: #fff; text-decoration: none; font-size: 20px; font-weight: 750; letter-spacing: -.5px; }
+.brand-mark { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; color: #fff; background: linear-gradient(145deg, #9c7cff, #704cfa); box-shadow: 0 8px 25px rgba(111, 76, 250, .28); }
+.brand-mark svg { width: 23px; fill: none; stroke: currentColor; stroke-width: 2; }
+.duration-pill { display: inline-flex; align-items: center; gap: 8px; border: 1px solid #30323b; border-radius: 99px; padding: 8px 12px; color: #b7b9c2; background: rgba(24,25,31,.72); font-size: 12px; font-weight: 650; }
+.duration-pill span { width: 6px; height: 6px; border-radius: 50%; background: var(--green); box-shadow: 0 0 10px var(--green); }
+
+.hero { display: grid; grid-template-columns: 1.2fr .8fr; align-items: end; gap: 60px; padding: 72px 0 43px; }
+.eyebrow { margin: 0 0 15px; color: var(--purple); font-size: 11px; font-weight: 800; letter-spacing: 2.2px; }
+.hero h1 { margin: 0; font-size: clamp(42px, 5vw, 70px); line-height: .98; letter-spacing: -4px; font-weight: 780; }
+.hero h1 span { color: #92949d; }
+.hero-copy { max-width: 420px; margin: 0 0 4px; color: #a4a6af; font-size: 15px; line-height: 1.65; }
+
+.workspace { display: grid; grid-template-columns: minmax(0, 1.07fr) minmax(0, .93fr); gap: 18px; align-items: stretch; }
+.panel { border: 1px solid var(--panel-border); border-radius: var(--radius); background: var(--panel); box-shadow: 0 24px 80px rgba(0,0,0,.23); backdrop-filter: blur(18px); }
+.upload-panel, .preview-panel { padding: 25px; }
+.section-heading { display: flex; align-items: center; gap: 13px; margin-bottom: 21px; }
+.section-heading .step { display: grid; place-items: center; width: 34px; height: 34px; flex: 0 0 auto; border: 1px solid #3b3d48; border-radius: 10px; color: var(--purple); background: #202129; font-size: 11px; font-weight: 800; letter-spacing: .5px; }
+.section-heading h2 { margin: 0 0 3px; font-size: 17px; letter-spacing: -.3px; }
+.section-heading p { margin: 0; color: var(--muted); font-size: 12px; }
+
+.upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.dropzone { position: relative; display: grid; min-height: 225px; place-items: center; overflow: hidden; border: 1px dashed #42444e; border-radius: 17px; background: #14151a; cursor: pointer; transition: border-color .2s, transform .2s, background .2s; }
+.dropzone > input[type="file"] { position: absolute; inset: 0; z-index: 5; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.dropzone:hover, .dropzone.dragging { border-color: var(--purple); background: #18171f; transform: translateY(-1px); }
+.drop-content { display: flex; position: relative; z-index: 2; align-items: center; flex-direction: column; text-align: center; }
+.upload-icon { display: grid; width: 42px; height: 42px; margin-bottom: 13px; place-items: center; border: 1px solid #353741; border-radius: 12px; color: #b9bbc4; background: #1d1e25; }
+.upload-icon svg { width: 21px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.drop-content strong { margin-bottom: 5px; font-size: 14px; }
+.drop-content small { color: #777985; font-size: 11px; }
+.drop-preview { position: absolute; inset: 0; z-index: 1; background-position: center; background-size: cover; opacity: 0; transition: opacity .2s; }
+.drop-preview::after { position: absolute; inset: 0; content: ""; background: linear-gradient(to top, rgba(0,0,0,.48), rgba(0,0,0,.03) 55%); }
+.dropzone.loaded { border-style: solid; border-color: #454751; }
+.dropzone.loaded .drop-preview { opacity: 1; }
+.dropzone.loaded .drop-content { align-self: end; margin-bottom: 17px; }
+.dropzone.loaded .upload-icon, .dropzone.loaded .drop-content small { display: none; }
+.dropzone.loaded .drop-content strong { padding: 6px 10px; border-radius: 8px; background: rgba(10,10,13,.68); backdrop-filter: blur(8px); }
+.image-badge { position: absolute; z-index: 3; top: 10px; left: 10px; display: none; padding: 5px 7px; border-radius: 6px; color: #fff; background: rgba(10,10,13,.67); backdrop-filter: blur(8px); font-size: 9px; font-weight: 800; letter-spacing: 1px; }
+.remove-image { position: absolute; z-index: 7; top: 9px; right: 9px; display: none; width: 29px; height: 29px; padding: 0 0 2px; border: 0; border-radius: 8px; color: #fff; background: rgba(10,10,13,.72); font-size: 22px; line-height: 1; cursor: pointer; }
+.dropzone.loaded .image-badge, .dropzone.loaded .remove-image { display: block; }
+
+.timing-card { margin-top: 15px; padding: 15px; border: 1px solid #2f313a; border-radius: 15px; background: #15161b; }
+.timing-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; color: #d8d9de; font-size: 11px; font-weight: 700; }
+.locked { display: inline-flex; align-items: center; gap: 5px; color: #787a85; font-weight: 600; }
+.locked svg { width: 12px; fill: none; stroke: currentColor; stroke-width: 1.7; }
+.timeline { display: flex; height: 48px; gap: 3px; }
+.timeline > div { display: flex; min-width: 31px; align-items: center; justify-content: space-between; padding: 0 10px; border-radius: 8px; font-size: 9px; font-weight: 800; letter-spacing: .8px; }
+.timeline > div b { font-size: 10px; letter-spacing: 0; }
+.timeline-open { color: #cbc3ff; background: linear-gradient(90deg, #3a315d, #302b49); }
+.timeline-open.first { flex: 5; }
+.timeline-open.second { flex: 3; }
+.timeline-blink { flex: .3; color: #9a9ca6; background: #292a32; padding: 0 7px !important; }
+.timeline-blink span { display: none; }
+.spec-row { display: flex; align-items: center; justify-content: center; gap: 9px; margin-top: 11px; color: #70727d; font-size: 9px; font-weight: 650; letter-spacing: .4px; }
+.spec-row i { width: 3px; height: 3px; border-radius: 50%; background: #454751; }
+
+.preview-panel { display: flex; flex-direction: column; }
+.stage { position: relative; display: grid; min-height: 304px; flex: 1; overflow: hidden; place-items: center; border: 1px solid #30313a; border-radius: 17px; background: #101116; }
+#previewCanvas { display: none; width: 100%; height: 100%; object-fit: contain; background: #000; }
+.stage.ready #previewCanvas { display: block; }
+.empty-stage { display: flex; align-items: center; flex-direction: column; text-align: center; }
+.stage.ready .empty-stage { display: none; }
+.empty-eye { display: grid; width: 66px; height: 66px; margin-bottom: 13px; place-items: center; border: 1px solid #292b33; border-radius: 20px; color: #444650; background: #17181e; }
+.empty-eye svg { width: 46px; fill: none; stroke: currentColor; stroke-width: 1.5; }
+.empty-stage strong { margin-bottom: 6px; color: #8b8d97; font-size: 13px; }
+.empty-stage small { color: #595b65; font-size: 11px; }
+.state-chip { position: absolute; right: 10px; top: 10px; display: none; padding: 6px 8px; border-radius: 7px; color: white; background: rgba(10,10,13,.7); backdrop-filter: blur(8px); font-size: 9px; font-weight: 800; letter-spacing: 1px; }
+.stage.ready .state-chip { display: block; }
+
+.player-row { display: flex; align-items: center; gap: 12px; padding: 15px 2px 13px; }
+.play-button { display: grid; width: 36px; height: 36px; flex: 0 0 auto; place-items: center; padding: 0; border: 1px solid #3c3e48; border-radius: 50%; color: #fff; background: #22232b; cursor: pointer; }
+.play-button:disabled { opacity: .35; cursor: default; }
+.play-button svg { width: 15px; fill: currentColor; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.play-button .pause-icon { display: none; fill: none; }
+.play-button.playing .play-icon { display: none; }
+.play-button.playing .pause-icon { display: block; }
+.scrub-wrap { flex: 1; }
+.time-row { display: flex; justify-content: space-between; margin-bottom: 7px; color: #8a8c96; font-variant-numeric: tabular-nums; font-size: 10px; }
+.progress-track { position: relative; height: 3px; border-radius: 9px; background: #30313a; }
+#progressBar { width: 0; height: 100%; border-radius: inherit; background: var(--purple); }
+#progressKnob { position: absolute; left: 0; top: 50%; width: 9px; height: 9px; border: 2px solid #d8d0ff; border-radius: 50%; background: var(--purple-strong); transform: translate(-50%, -50%); }
+
+.export-button, .save-button, .download-button { display: flex; align-items: center; justify-content: center; border: 0; border-radius: 13px; cursor: pointer; font-weight: 750; }
+.export-button { width: 100%; min-height: 52px; padding: 0 18px; color: white; background: linear-gradient(135deg, #8d6dff, #6e4bf0); box-shadow: 0 13px 30px rgba(101, 70, 221, .24); }
+.export-button:disabled { color: #777985; background: #282931; box-shadow: none; cursor: default; }
+.export-label, .export-progress { align-items: center; gap: 9px; }
+.export-label { display: flex; }
+.export-progress { display: none; }
+.export-button.exporting .export-label { display: none; }
+.export-button.exporting .export-progress { display: flex; }
+.export-button svg, .save-button svg, .download-button svg { width: 19px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.spinner { width: 17px; height: 17px; border: 2px solid rgba(255,255,255,.3); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.result-actions { display: none; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+.result-actions.visible { display: grid; }
+.save-button, .download-button { min-height: 48px; gap: 8px; color: #e8e8ec; border: 1px solid #3b3d47; background: #22232a; font-size: 12px; }
+.save-button { color: #fff; border-color: #6651b6; background: #372d5b; }
+.status-message { min-height: 15px; margin: 10px 0 0; color: #9fa1aa; text-align: center; font-size: 10px; }
+.status-message.error { color: #ff8f98; }
+.privacy-note { display: flex; align-items: center; justify-content: center; gap: 6px; margin: auto 0 0; padding-top: 10px; color: #666873; font-size: 9px; }
+.privacy-note svg { width: 11px; fill: none; stroke: currentColor; stroke-width: 1.6; }
+
+@media (max-width: 850px) {
+  .app-shell { width: min(640px, calc(100% - 28px)); }
+  .hero { grid-template-columns: 1fr; gap: 20px; padding: 52px 3px 32px; }
+  .hero h1 { letter-spacing: -2.5px; }
+  .workspace { grid-template-columns: 1fr; }
+  .stage { min-height: 360px; }
+}
+
+@media (max-width: 540px) {
+  .app-shell { width: calc(100% - 22px); }
+  .duration-pill { padding: 7px 10px; font-size: 10px; }
+  .hero { padding-top: 44px; }
+  .hero h1 { font-size: clamp(39px, 12vw, 53px); }
+  .hero-copy { font-size: 14px; }
+  .upload-panel, .preview-panel { padding: 17px; }
+  .upload-grid { gap: 8px; }
+  .dropzone { min-height: 185px; }
+  .timeline > div { padding: 0 7px; }
+  .timeline-blink { padding: 0 5px !important; }
+  .stage { min-height: 285px; }
+  .result-actions { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+}
+</style>
+</head>
+<body>
+  <div class="ambient ambient-one"></div>
+  <div class="ambient ambient-two"></div>
+
+  <main class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="#" aria-label="BlinkCut home">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 40 40"><path d="M5 20c3.8-7 8.8-10.5 15-10.5S31.2 13 35 20c-3.8 7-8.8 10.5-15 10.5S8.8 27 5 20Z"/><circle cx="20" cy="20" r="5"/></svg>
+        </span>
+        <span>BlinkCut</span>
+      </a>
+      <span class="duration-pill"><span></span> 8.6 sec MP4</span>
+    </header>
+
+    <section class="hero">
+      <div>
+        <p class="eyebrow">TWO IMAGES. ONE PERFECT BLINK.</p>
+        <h1>Make your character<br><span>blink on cue.</span></h1>
+      </div>
+      <p class="hero-copy">Add an open-eyes image and a blink image. BlinkCut turns them into a precisely timed clip, ready to save anywhere.</p>
+    </section>
+
+    <section class="workspace">
+      <div class="panel upload-panel">
+        <div class="section-heading">
+          <span class="step">01</span>
+          <div>
+            <h2>Add your images</h2>
+            <p>PNG, JPG or WebP</p>
+          </div>
+        </div>
+
+        <div class="upload-grid">
+          <label class="dropzone" id="openDropzone">
+            <input type="file" id="openInput" accept="image/png,image/jpeg,image/webp,image/heic,image/heif" aria-label="Choose open eyes image">
+            <span class="drop-preview" id="openPreview" aria-hidden="true"></span>
+            <span class="drop-content">
+              <span class="upload-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 14v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/></svg>
+              </span>
+              <strong>Open eyes</strong>
+              <small>Tap or drop image</small>
+            </span>
+            <span class="image-badge">OPEN</span>
+            <button class="remove-image" type="button" data-remove="open" aria-label="Remove open eyes image">×</button>
+          </label>
+
+          <label class="dropzone" id="blinkDropzone">
+            <input type="file" id="blinkInput" accept="image/png,image/jpeg,image/webp,image/heic,image/heif" aria-label="Choose blink image">
+            <span class="drop-preview" id="blinkPreview" aria-hidden="true"></span>
+            <span class="drop-content">
+              <span class="upload-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 14v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/></svg>
+              </span>
+              <strong>Blink</strong>
+              <small>Tap or drop image</small>
+            </span>
+            <span class="image-badge">BLINK</span>
+            <button class="remove-image" type="button" data-remove="blink" aria-label="Remove blink image">×</button>
+          </label>
+        </div>
+
+        <div class="timing-card">
+          <div class="timing-top">
+            <span>Exact sequence</span>
+            <span class="locked"><svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg> Locked</span>
+          </div>
+          <div class="timeline" aria-label="5 seconds open, 0.3 seconds blink, 3 seconds open, 0.3 seconds blink">
+            <div class="timeline-open first"><span>OPEN</span><b>5.0s</b></div>
+            <div class="timeline-blink"><span>B</span><b>.3</b></div>
+            <div class="timeline-open second"><span>OPEN</span><b>3.0s</b></div>
+            <div class="timeline-blink"><span>B</span><b>.3</b></div>
+          </div>
+          <div class="spec-row">
+            <span>30 FPS</span><i></i><span>258 frames</span><i></i><span>Frame-exact</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel preview-panel">
+        <div class="section-heading preview-heading">
+          <span class="step">02</span>
+          <div>
+            <h2>Preview & export</h2>
+            <p>Your finished clip</p>
+          </div>
+        </div>
+
+        <div class="stage" id="stage">
+          <canvas id="previewCanvas" width="1280" height="720"></canvas>
+          <div class="empty-stage" id="emptyStage">
+            <span class="empty-eye" aria-hidden="true">
+              <svg viewBox="0 0 80 80"><path d="M9 40c8-14 18.3-21 31-21s23 7 31 21c-8 14-18.3 21-31 21S17 54 9 40Z"/><circle cx="40" cy="40" r="10"/></svg>
+            </span>
+            <strong>Your preview appears here</strong>
+            <small>Add both images to get started</small>
+          </div>
+          <div class="state-chip" id="stateChip">OPEN</div>
+        </div>
+
+        <div class="player-row">
+          <button class="play-button" id="playButton" type="button" disabled aria-label="Play preview">
+            <svg class="play-icon" viewBox="0 0 24 24"><path d="m8 5 11 7-11 7V5Z"/></svg>
+            <svg class="pause-icon" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></svg>
+          </button>
+          <div class="scrub-wrap">
+            <div class="time-row"><span id="currentTime">0.0s</span><span>8.6s</span></div>
+            <div class="progress-track"><div id="progressBar"></div><span id="progressKnob"></span></div>
+          </div>
+        </div>
+
+        <button class="export-button" id="exportButton" type="button" disabled>
+          <span class="export-label"><svg viewBox="0 0 24 24"><path d="M12 4v11m0 0 4-4m-4 4-4-4M5 19h14"/></svg> Create MP4</span>
+          <span class="export-progress"><span class="spinner"></span><span id="exportProgressText">Rendering 0%</span></span>
+        </button>
+
+        <div class="result-actions" id="resultActions">
+          <button class="save-button" id="shareButton" type="button">
+            <svg viewBox="0 0 24 24"><path d="M12 16V4m0 0L8 8m4-4 4 4M6 11H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-1"/></svg>
+            Save / Share
+          </button>
+          <button class="download-button" id="downloadButton" type="button">
+            <svg viewBox="0 0 24 24"><path d="M12 4v12m0 0 5-5m-5 5-5-5M5 20h14"/></svg>
+            Download MP4
+          </button>
+        </div>
+
+        <p class="status-message" id="statusMessage" role="status" aria-live="polite"></p>
+        <p class="privacy-note"><svg viewBox="0 0 24 24"><path d="M12 21s8-3.5 8-10V5l-8-3-8 3v6c0 6.5 8 10 8 10Z"/></svg> Images stay on your device</p>
+      </div>
+    </section>
+  </main>
+
+  <script>(()=>{var Pe=(e,t,r)=>{if(!t.has(e))throw TypeError("Cannot "+r)},i=(e,t,r)=>(Pe(e,t,"read from private field"),r?r.call(e):t.get(e)),m=(e,t,r)=>{if(t.has(e))throw TypeError("Cannot add the same private member more than once");t instanceof WeakSet?t.add(e):t.set(e,r)},k=(e,t,r,a)=>(Pe(e,t,"write to private field"),a?a.call(e,r):t.set(e,r),r),Rt=(e,t,r,a)=>({set _(s){k(e,t,s,r)},get _(){return i(e,t,a)}}),c=(e,t,r)=>(Pe(e,t,"access private method"),r),p=new Uint8Array(8),x=new DataView(p.buffer),C=e=>[(e%256+256)%256],v=e=>(x.setUint16(0,e,!1),[p[0],p[1]]),Pt=e=>(x.setInt16(0,e,!1),[p[0],p[1]]),st=e=>(x.setUint32(0,e,!1),[p[1],p[2],p[3]]),l=e=>(x.setUint32(0,e,!1),[p[0],p[1],p[2],p[3]]),Wt=e=>(x.setInt32(0,e,!1),[p[0],p[1],p[2],p[3]]),H=e=>(x.setUint32(0,Math.floor(e/2**32),!1),x.setUint32(4,e,!1),[p[0],p[1],p[2],p[3],p[4],p[5],p[6],p[7]]),We=e=>(x.setInt16(0,2**8*e,!1),[p[0],p[1]]),O=e=>(x.setInt32(0,2**16*e,!1),[p[0],p[1],p[2],p[3]]),ze=e=>(x.setInt32(0,2**30*e,!1),[p[0],p[1],p[2],p[3]]),z=(e,t=!1)=>{let r=Array(e.length).fill(null).map((a,s)=>e.charCodeAt(s));return t&&r.push(0),r},ye=e=>e&&e[e.length-1],Ne=e=>{let t;for(let r of e)(!t||r.presentationTimestamp>t.presentationTimestamp)&&(t=r);return t},I=(e,t,r=!0)=>{let a=e*t;return r?Math.round(a):a},nt=e=>{let t=e*(Math.PI/180),r=Math.cos(t),a=Math.sin(t);return[r,a,0,-a,r,0,0,0,1]},ot=nt(0),lt=e=>[O(e[0]),O(e[1]),ze(e[2]),O(e[3]),O(e[4]),ze(e[5]),O(e[6]),O(e[7]),ze(e[8])],ae=e=>!e||typeof e!="object"?e:Array.isArray(e)?e.map(ae):Object.fromEntries(Object.entries(e).map(([t,r])=>[t,ae(r)])),J=e=>e>=0&&e<2**32,b=(e,t,r)=>({type:e,contents:t&&new Uint8Array(t.flat(10)),children:r}),y=(e,t,r,a,s)=>b(e,[C(t),st(r),a??[]],s),Nt=e=>{let t=512;return e.fragmented?b("ftyp",[z("iso5"),l(t),z("iso5"),z("iso6"),z("mp41")]):b("ftyp",[z("isom"),l(t),z("isom"),e.holdsAvc?z("avc1"):[],z("mp41")])},Me=e=>({type:"mdat",largeSize:e}),Vt=e=>({type:"free",size:e}),ce=(e,t,r=!1)=>b("moov",null,[$t(t,e),...e.map(a=>jt(a,t)),r?Ci(e):null]),$t=(e,t)=>{let r=I(Math.max(0,...t.filter(o=>o.samples.length>0).map(o=>{let u=Ne(o.samples);return u.presentationTimestamp+u.duration})),xe),a=Math.max(...t.map(o=>o.id))+1,s=!J(e)||!J(r),n=s?H:l;return y("mvhd",+s,0,[n(e),n(e),l(xe),n(r),O(1),We(1),Array(10).fill(0),lt(ot),Array(24).fill(0),l(a)])},jt=(e,t)=>b("trak",null,[qt(e,t),Ht(e,t)]),qt=(e,t)=>{let r=Ne(e.samples),a=I(r?r.presentationTimestamp+r.duration:0,xe),s=!J(t)||!J(a),n=s?H:l,o;return e.info.type==="video"?o=typeof e.info.rotation=="number"?nt(e.info.rotation):e.info.rotation:o=ot,y("tkhd",+s,3,[n(t),n(t),l(e.id),l(0),n(a),Array(8).fill(0),v(0),v(0),We(e.info.type==="audio"?1:0),v(0),lt(o),O(e.info.type==="video"?e.info.width:0),O(e.info.type==="video"?e.info.height:0)])},Ht=(e,t)=>b("mdia",null,[Gt(e,t),Kt(e.info.type==="video"?"vide":"soun"),Xt(e)]),Gt=(e,t)=>{let r=Ne(e.samples),a=I(r?r.presentationTimestamp+r.duration:0,e.timescale),s=!J(t)||!J(a),n=s?H:l;return y("mdhd",+s,0,[n(t),n(t),l(e.timescale),n(a),v(21956),v(0)])},Kt=e=>y("hdlr",0,0,[z("mhlr"),z(e),l(0),l(0),l(0),z("mp4-muxer-hdlr",!0)]),Xt=e=>b("minf",null,[e.info.type==="video"?Qt():Zt(),Jt(),ti(e)]),Qt=()=>y("vmhd",0,1,[v(0),v(0),v(0),v(0)]),Zt=()=>y("smhd",0,0,[v(0),v(0)]),Jt=()=>b("dinf",null,[Yt()]),Yt=()=>y("dref",0,0,[l(1)],[ei()]),ei=()=>y("url ",0,1),ti=e=>{let t=e.compositionTimeOffsetTable.length>1||e.compositionTimeOffsetTable.some(r=>r.sampleCompositionTimeOffset!==0);return b("stbl",null,[ii(e),pi(e),wi(e),vi(e),gi(e),yi(e),t?bi(e):null])},ii=e=>y("stsd",0,0,[l(1)],[e.info.type==="video"?ri(Oi[e.info.codec],e):fi(xi[e.info.codec],e)]),ri=(e,t)=>b(e,[Array(6).fill(0),v(1),v(0),v(0),Array(12).fill(0),v(t.info.width),v(t.info.height),l(4718592),l(4718592),l(0),v(1),Array(32).fill(0),v(24),Pt(65535)],[Ii[t.info.codec](t),t.info.decoderConfig.colorSpace?oi(t):null]),ai={bt709:1,bt470bg:5,smpte170m:6},si={bt709:1,smpte170m:6,"iec61966-2-1":13},ni={rgb:0,bt709:1,bt470bg:5,smpte170m:6},oi=e=>b("colr",[z("nclx"),v(ai[e.info.decoderConfig.colorSpace.primaries]),v(si[e.info.decoderConfig.colorSpace.transfer]),v(ni[e.info.decoderConfig.colorSpace.matrix]),C((e.info.decoderConfig.colorSpace.fullRange?1:0)<<7)]),li=e=>e.info.decoderConfig&&b("avcC",[...new Uint8Array(e.info.decoderConfig.description)]),hi=e=>e.info.decoderConfig&&b("hvcC",[...new Uint8Array(e.info.decoderConfig.description)]),ui=e=>{if(!e.info.decoderConfig)return null;let t=e.info.decoderConfig;if(!t.colorSpace)throw new Error("'colorSpace' is required in the decoder config for VP9.");let r=t.codec.split("."),a=Number(r[1]),s=Number(r[2]),u=(Number(r[3])<<4)+(0<<1)+Number(t.colorSpace.fullRange);return y("vpcC",1,0,[C(a),C(s),C(u),C(2),C(2),C(2),v(0)])},di=()=>{let r=(1<<7)+1;return b("av1C",[r,0,0,0])},fi=(e,t)=>b(e,[Array(6).fill(0),v(1),v(0),v(0),l(0),v(t.info.numberOfChannels),v(16),v(0),v(0),O(t.info.sampleRate)],[Di[t.info.codec](t)]),mi=e=>{let t=new Uint8Array(e.info.decoderConfig.description);return y("esds",0,0,[l(58753152),C(32+t.byteLength),v(1),C(0),l(75530368),C(18+t.byteLength),C(64),C(21),st(0),l(130071),l(130071),l(92307584),C(t.byteLength),...t,l(109084800),C(1),C(2)])},ci=e=>{var s;let t=3840,r=0,a=(s=e.info.decoderConfig)==null?void 0:s.description;if(a){if(a.byteLength<18)throw new TypeError("Invalid decoder description provided for Opus; must be at least 18 bytes long.");let n=ArrayBuffer.isView(a)?new DataView(a.buffer,a.byteOffset,a.byteLength):new DataView(a);t=n.getUint16(10,!0),r=n.getInt16(14,!0)}return b("dOps",[C(0),C(e.info.numberOfChannels),v(t),l(e.info.sampleRate),We(r),C(0)])},pi=e=>y("stts",0,0,[l(e.timeToSampleTable.length),e.timeToSampleTable.map(t=>[l(t.sampleCount),l(t.sampleDelta)])]),wi=e=>{if(e.samples.every(r=>r.type==="key"))return null;let t=[...e.samples.entries()].filter(([,r])=>r.type==="key");return y("stss",0,0,[l(t.length),t.map(([r])=>l(r+1))])},vi=e=>y("stsc",0,0,[l(e.compactlyCodedChunkTable.length),e.compactlyCodedChunkTable.map(t=>[l(t.firstChunk),l(t.samplesPerChunk),l(1)])]),gi=e=>y("stsz",0,0,[l(0),l(e.samples.length),e.samples.map(t=>l(t.size))]),yi=e=>e.finalizedChunks.length>0&&ye(e.finalizedChunks).offset>=2**32?y("co64",0,0,[l(e.finalizedChunks.length),e.finalizedChunks.map(t=>H(t.offset))]):y("stco",0,0,[l(e.finalizedChunks.length),e.finalizedChunks.map(t=>l(t.offset))]),bi=e=>y("ctts",0,0,[l(e.compositionTimeOffsetTable.length),e.compositionTimeOffsetTable.map(t=>[l(t.sampleCount),l(t.sampleCompositionTimeOffset)])]),Ci=e=>b("mvex",null,e.map(Ti)),Ti=e=>y("trex",0,0,[l(e.id),l(1),l(0),l(0),l(0)]),at=(e,t)=>b("moof",null,[Si(e),...t.map(ki)]),Si=e=>y("mfhd",0,0,[l(e)]),ht=e=>{let t=0,r=0,a=0,s=0,n=e.type==="delta";return r|=+n,n?t|=1:t|=2,t<<24|r<<16|a<<8|s},ki=e=>b("traf",null,[Ei(e),_i(e),Ai(e)]),Ei=e=>{let t=0;t|=8,t|=16,t|=32,t|=131072;let r=e.currentChunk.samples[1]??e.currentChunk.samples[0],a={duration:r.timescaleUnitsToNextSample,size:r.size,flags:ht(r)};return y("tfhd",0,t,[l(e.id),l(a.duration),l(a.size),l(a.flags)])},_i=e=>y("tfdt",1,0,[H(I(e.currentChunk.startTimestamp,e.timescale))]),Ai=e=>{let t=e.currentChunk.samples.map(F=>F.timescaleUnitsToNextSample),r=e.currentChunk.samples.map(F=>F.size),a=e.currentChunk.samples.map(ht),s=e.currentChunk.samples.map(F=>I(F.presentationTimestamp-F.decodeTimestamp,e.timescale)),n=new Set(t),o=new Set(r),u=new Set(a),g=new Set(s),w=u.size===2&&a[0]!==a[1],_=n.size>1,W=o.size>1,fe=!w&&u.size>1,te=g.size>1||[...g].some(F=>F!==0),U=0;return U|=1,U|=4*+w,U|=256*+_,U|=512*+W,U|=1024*+fe,U|=2048*+te,y("trun",1,U,[l(e.currentChunk.samples.length),l(e.currentChunk.offset-e.currentChunk.moofOffset||0),w?l(a[0]):[],e.currentChunk.samples.map((F,me)=>[_?l(t[me]):[],W?l(r[me]):[],fe?l(a[me]):[],te?Wt(s[me]):[]])])},Bi=e=>b("mfra",null,[...e.map(zi),Mi()]),zi=(e,t)=>y("tfra",1,0,[l(e.id),l(63),l(e.finalizedChunks.length),e.finalizedChunks.map(a=>[H(I(a.startTimestamp,e.timescale)),H(a.moofOffset),l(t+1),l(1),l(1)])]),Mi=()=>y("mfro",0,0,[l(0)]),Oi={avc:"avc1",hevc:"hvc1",vp9:"vp09",av1:"av01"},Ii={avc:li,hevc:hi,vp9:ui,av1:di},xi={aac:"mp4a",opus:"Opus"},Di={aac:mi,opus:ci},sr=Symbol("isTarget"),Ee=class{},Ve=class extends Ee{constructor(){super(...arguments),this.buffer=null}},ut=class extends Ee{constructor(e){if(super(),this.options=e,typeof e!="object")throw new TypeError("StreamTarget requires an options object to be passed to its constructor.");if(e.onData){if(typeof e.onData!="function")throw new TypeError("options.onData, when provided, must be a function.");if(e.onData.length<2)throw new TypeError("options.onData, when provided, must be a function that takes in at least two arguments (data and position). Ignoring the position argument, which specifies the byte offset at which the data is to be written, can lead to broken outputs.")}if(e.chunked!==void 0&&typeof e.chunked!="boolean")throw new TypeError("options.chunked, when provided, must be a boolean.");if(e.chunkSize!==void 0&&(!Number.isInteger(e.chunkSize)||e.chunkSize<1024))throw new TypeError("options.chunkSize, when provided, must be an integer and not smaller than 1024.")}},Ui=class extends Ee{constructor(e,t){if(super(),this.stream=e,this.options=t,!(e instanceof FileSystemWritableFileStream))throw new TypeError("FileSystemWritableFileStreamTarget requires a FileSystemWritableFileStream instance.");if(t!==void 0&&typeof t!="object")throw new TypeError("FileSystemWritableFileStreamTarget's options, when provided, must be an object.");if(t&&t.chunkSize!==void 0&&(!Number.isInteger(t.chunkSize)||t.chunkSize<=0))throw new TypeError("options.chunkSize, when provided, must be a positive integer")}},N,X,dt=class{constructor(){this.pos=0,m(this,N,new Uint8Array(8)),m(this,X,new DataView(i(this,N).buffer)),this.offsets=new WeakMap}seek(e){this.pos=e}writeU32(e){i(this,X).setUint32(0,e,!1),this.write(i(this,N).subarray(0,4))}writeU64(e){i(this,X).setUint32(0,Math.floor(e/2**32),!1),i(this,X).setUint32(4,e,!1),this.write(i(this,N).subarray(0,8))}writeAscii(e){for(let t=0;t<e.length;t++)i(this,X).setUint8(t%8,e.charCodeAt(t)),t%8===7&&this.write(i(this,N));e.length%8!==0&&this.write(i(this,N).subarray(0,e.length%8))}writeBox(e){if(this.offsets.set(e,this.pos),e.contents&&!e.children)this.writeBoxHeader(e,e.size??e.contents.byteLength+8),this.write(e.contents);else{let t=this.pos;if(this.writeBoxHeader(e,0),e.contents&&this.write(e.contents),e.children)for(let s of e.children)s&&this.writeBox(s);let r=this.pos,a=e.size??r-t;this.seek(t),this.writeBoxHeader(e,a),this.seek(r)}}writeBoxHeader(e,t){this.writeU32(e.largeSize?1:t),this.writeAscii(e.type),e.largeSize&&this.writeU64(t)}measureBoxHeader(e){return 8+(e.largeSize?8:0)}patchBox(e){let t=this.pos;this.seek(this.offsets.get(e)),this.writeBox(e),this.seek(t)}measureBox(e){if(e.contents&&!e.children)return this.measureBoxHeader(e)+e.contents.byteLength;{let t=this.measureBoxHeader(e);if(e.contents&&(t+=e.contents.byteLength),e.children)for(let r of e.children)r&&(t+=this.measureBox(r));return t}}};N=new WeakMap;X=new WeakMap;var pe,q,he,ie,we,Oe,Fi=class extends dt{constructor(e){super(),m(this,we),m(this,pe,void 0),m(this,q,new ArrayBuffer(2**16)),m(this,he,new Uint8Array(i(this,q))),m(this,ie,0),k(this,pe,e)}write(e){c(this,we,Oe).call(this,this.pos+e.byteLength),i(this,he).set(e,this.pos),this.pos+=e.byteLength,k(this,ie,Math.max(i(this,ie),this.pos))}finalize(){c(this,we,Oe).call(this,this.pos),i(this,pe).buffer=i(this,q).slice(0,Math.max(i(this,ie),this.pos))}};pe=new WeakMap;q=new WeakMap;he=new WeakMap;ie=new WeakMap;we=new WeakSet;Oe=function(e){let t=i(this,q).byteLength;for(;t<e;)t*=2;if(t===i(this,q).byteLength)return;let r=new ArrayBuffer(t),a=new Uint8Array(r);a.set(i(this,he),0),k(this,q,r),k(this,he,a)};var Li=2**24,Ri=2,se,V,re,R,B,be,Ie,$e,ft,je,mt,ne,Ce,qe=class extends dt{constructor(e){var t,r;super(),m(this,be),m(this,$e),m(this,je),m(this,ne),m(this,se,void 0),m(this,V,[]),m(this,re,void 0),m(this,R,void 0),m(this,B,[]),k(this,se,e),k(this,re,((t=e.options)==null?void 0:t.chunked)??!1),k(this,R,((r=e.options)==null?void 0:r.chunkSize)??Li)}write(e){i(this,V).push({data:e.slice(),start:this.pos}),this.pos+=e.byteLength}flush(){var r,a;if(i(this,V).length===0)return;let e=[],t=[...i(this,V)].sort((s,n)=>s.start-n.start);e.push({start:t[0].start,size:t[0].data.byteLength});for(let s=1;s<t.length;s++){let n=e[e.length-1],o=t[s];o.start<=n.start+n.size?n.size=Math.max(n.size,o.start+o.data.byteLength-n.start):e.push({start:o.start,size:o.data.byteLength})}for(let s of e){s.data=new Uint8Array(s.size);for(let n of i(this,V))s.start<=n.start&&n.start<s.start+s.size&&s.data.set(n.data,n.start-s.start);i(this,re)?(c(this,be,Ie).call(this,s.data,s.start),c(this,ne,Ce).call(this)):(a=(r=i(this,se).options).onData)==null||a.call(r,s.data,s.start)}i(this,V).length=0}finalize(){i(this,re)&&c(this,ne,Ce).call(this,!0)}};se=new WeakMap;V=new WeakMap;re=new WeakMap;R=new WeakMap;B=new WeakMap;be=new WeakSet;Ie=function(e,t){let r=i(this,B).findIndex(u=>u.start<=t&&t<u.start+i(this,R));r===-1&&(r=c(this,je,mt).call(this,t));let a=i(this,B)[r],s=t-a.start,n=e.subarray(0,Math.min(i(this,R)-s,e.byteLength));a.data.set(n,s);let o={start:s,end:s+n.byteLength};if(c(this,$e,ft).call(this,a,o),a.written[0].start===0&&a.written[0].end===i(this,R)&&(a.shouldFlush=!0),i(this,B).length>Ri){for(let u=0;u<i(this,B).length-1;u++)i(this,B)[u].shouldFlush=!0;c(this,ne,Ce).call(this)}n.byteLength<e.byteLength&&c(this,be,Ie).call(this,e.subarray(n.byteLength),t+n.byteLength)};$e=new WeakSet;ft=function(e,t){let r=0,a=e.written.length-1,s=-1;for(;r<=a;){let n=Math.floor(r+(a-r+1)/2);e.written[n].start<=t.start?(r=n+1,s=n):a=n-1}for(e.written.splice(s+1,0,t),(s===-1||e.written[s].end<t.start)&&s++;s<e.written.length-1&&e.written[s].end>=e.written[s+1].start;)e.written[s].end=Math.max(e.written[s].end,e.written[s+1].end),e.written.splice(s+1,1)};je=new WeakSet;mt=function(e){let r={start:Math.floor(e/i(this,R))*i(this,R),data:new Uint8Array(i(this,R)),written:[],shouldFlush:!1};return i(this,B).push(r),i(this,B).sort((a,s)=>a.start-s.start),i(this,B).indexOf(r)};ne=new WeakSet;Ce=function(e=!1){var t,r;for(let a=0;a<i(this,B).length;a++){let s=i(this,B)[a];if(!(!s.shouldFlush&&!e)){for(let n of s.written)(r=(t=i(this,se).options).onData)==null||r.call(t,s.data.subarray(n.start,n.end),s.start+n.start);i(this,B).splice(a--,1)}}};var Pi=class extends qe{constructor(e){var t;super(new ut({onData:(r,a)=>e.stream.write({type:"write",data:r,position:a}),chunked:!0,chunkSize:(t=e.options)==null?void 0:t.chunkSize}))}},xe=1e3,Wi=["avc","hevc","vp9","av1"],Ni=["aac","opus"],Vi=2082844800,$i=["strict","offset","cross-track-offset"],d,f,Te,A,E,S,Q,Z,He,$,j,oe,De,ct,Ue,pt,Ge,wt,Fe,vt,Ke,gt,ve,Le,M,L,Xe,yt,le,Se,ke,Qe,Y,ue,ge,Re,bt=class{constructor(e){if(m(this,De),m(this,Ue),m(this,Ge),m(this,Fe),m(this,Ke),m(this,ve),m(this,M),m(this,Xe),m(this,le),m(this,ke),m(this,Y),m(this,ge),m(this,d,void 0),m(this,f,void 0),m(this,Te,void 0),m(this,A,void 0),m(this,E,null),m(this,S,null),m(this,Q,Math.floor(Date.now()/1e3)+Vi),m(this,Z,[]),m(this,He,1),m(this,$,[]),m(this,j,[]),m(this,oe,!1),c(this,De,ct).call(this,e),e.video=ae(e.video),e.audio=ae(e.audio),e.fastStart=ae(e.fastStart),this.target=e.target,k(this,d,{firstTimestampBehavior:"strict",...e}),e.target instanceof Ve)k(this,f,new Fi(e.target));else if(e.target instanceof ut)k(this,f,new qe(e.target));else if(e.target instanceof Ui)k(this,f,new Pi(e.target));else throw new Error(`Invalid target: ${e.target}`);c(this,Fe,vt).call(this),c(this,Ue,pt).call(this)}addVideoChunk(e,t,r,a){if(!(e instanceof EncodedVideoChunk))throw new TypeError("addVideoChunk's first argument (sample) must be of type EncodedVideoChunk.");if(t&&typeof t!="object")throw new TypeError("addVideoChunk's second argument (meta), when provided, must be an object.");if(r!==void 0&&(!Number.isFinite(r)||r<0))throw new TypeError("addVideoChunk's third argument (timestamp), when provided, must be a non-negative real number.");if(a!==void 0&&!Number.isFinite(a))throw new TypeError("addVideoChunk's fourth argument (compositionTimeOffset), when provided, must be a real number.");let s=new Uint8Array(e.byteLength);e.copyTo(s),this.addVideoChunkRaw(s,e.type,r??e.timestamp,e.duration,t,a)}addVideoChunkRaw(e,t,r,a,s,n){if(!(e instanceof Uint8Array))throw new TypeError("addVideoChunkRaw's first argument (data) must be an instance of Uint8Array.");if(t!=="key"&&t!=="delta")throw new TypeError("addVideoChunkRaw's second argument (type) must be either 'key' or 'delta'.");if(!Number.isFinite(r)||r<0)throw new TypeError("addVideoChunkRaw's third argument (timestamp) must be a non-negative real number.");if(!Number.isFinite(a)||a<0)throw new TypeError("addVideoChunkRaw's fourth argument (duration) must be a non-negative real number.");if(s&&typeof s!="object")throw new TypeError("addVideoChunkRaw's fifth argument (meta), when provided, must be an object.");if(n!==void 0&&!Number.isFinite(n))throw new TypeError("addVideoChunkRaw's sixth argument (compositionTimeOffset), when provided, must be a real number.");if(c(this,ge,Re).call(this),!i(this,d).video)throw new Error("No video track declared.");if(typeof i(this,d).fastStart=="object"&&i(this,E).samples.length===i(this,d).fastStart.expectedVideoChunks)throw new Error(`Cannot add more video chunks than specified in 'fastStart' (${i(this,d).fastStart.expectedVideoChunks}).`);let o=c(this,ve,Le).call(this,i(this,E),e,t,r,a,s,n);if(i(this,d).fastStart==="fragmented"&&i(this,S)){for(;i(this,j).length>0&&i(this,j)[0].decodeTimestamp<=o.decodeTimestamp;){let u=i(this,j).shift();c(this,M,L).call(this,i(this,S),u)}o.decodeTimestamp<=i(this,S).lastDecodeTimestamp?c(this,M,L).call(this,i(this,E),o):i(this,$).push(o)}else c(this,M,L).call(this,i(this,E),o)}addAudioChunk(e,t,r){if(!(e instanceof EncodedAudioChunk))throw new TypeError("addAudioChunk's first argument (sample) must be of type EncodedAudioChunk.");if(t&&typeof t!="object")throw new TypeError("addAudioChunk's second argument (meta), when provided, must be an object.");if(r!==void 0&&(!Number.isFinite(r)||r<0))throw new TypeError("addAudioChunk's third argument (timestamp), when provided, must be a non-negative real number.");let a=new Uint8Array(e.byteLength);e.copyTo(a),this.addAudioChunkRaw(a,e.type,r??e.timestamp,e.duration,t)}addAudioChunkRaw(e,t,r,a,s){if(!(e instanceof Uint8Array))throw new TypeError("addAudioChunkRaw's first argument (data) must be an instance of Uint8Array.");if(t!=="key"&&t!=="delta")throw new TypeError("addAudioChunkRaw's second argument (type) must be either 'key' or 'delta'.");if(!Number.isFinite(r)||r<0)throw new TypeError("addAudioChunkRaw's third argument (timestamp) must be a non-negative real number.");if(!Number.isFinite(a)||a<0)throw new TypeError("addAudioChunkRaw's fourth argument (duration) must be a non-negative real number.");if(s&&typeof s!="object")throw new TypeError("addAudioChunkRaw's fifth argument (meta), when provided, must be an object.");if(c(this,ge,Re).call(this),!i(this,d).audio)throw new Error("No audio track declared.");if(typeof i(this,d).fastStart=="object"&&i(this,S).samples.length===i(this,d).fastStart.expectedAudioChunks)throw new Error(`Cannot add more audio chunks than specified in 'fastStart' (${i(this,d).fastStart.expectedAudioChunks}).`);let n=c(this,ve,Le).call(this,i(this,S),e,t,r,a,s);if(i(this,d).fastStart==="fragmented"&&i(this,E)){for(;i(this,$).length>0&&i(this,$)[0].decodeTimestamp<=n.decodeTimestamp;){let o=i(this,$).shift();c(this,M,L).call(this,i(this,E),o)}n.decodeTimestamp<=i(this,E).lastDecodeTimestamp?c(this,M,L).call(this,i(this,S),n):i(this,j).push(n)}else c(this,M,L).call(this,i(this,S),n)}finalize(){if(i(this,oe))throw new Error("Cannot finalize a muxer more than once.");if(i(this,d).fastStart==="fragmented"){for(let t of i(this,$))c(this,M,L).call(this,i(this,E),t);for(let t of i(this,j))c(this,M,L).call(this,i(this,S),t);c(this,ke,Qe).call(this,!1)}else i(this,E)&&c(this,le,Se).call(this,i(this,E)),i(this,S)&&c(this,le,Se).call(this,i(this,S));let e=[i(this,E),i(this,S)].filter(Boolean);if(i(this,d).fastStart==="in-memory"){let t;for(let a=0;a<2;a++){let s=ce(e,i(this,Q)),n=i(this,f).measureBox(s);t=i(this,f).measureBox(i(this,A));let o=i(this,f).pos+n+t;for(let u of i(this,Z)){u.offset=o;for(let{data:g}of u.samples)o+=g.byteLength,t+=g.byteLength}if(o<2**32)break;t>=2**32&&(i(this,A).largeSize=!0)}let r=ce(e,i(this,Q));i(this,f).writeBox(r),i(this,A).size=t,i(this,f).writeBox(i(this,A));for(let a of i(this,Z))for(let s of a.samples)i(this,f).write(s.data),s.data=null}else if(i(this,d).fastStart==="fragmented"){let t=i(this,f).pos,r=Bi(e);i(this,f).writeBox(r);let a=i(this,f).pos-t;i(this,f).seek(i(this,f).pos-4),i(this,f).writeU32(a)}else{let t=i(this,f).offsets.get(i(this,A)),r=i(this,f).pos-t;i(this,A).size=r,i(this,A).largeSize=r>=2**32,i(this,f).patchBox(i(this,A));let a=ce(e,i(this,Q));if(typeof i(this,d).fastStart=="object"){i(this,f).seek(i(this,Te)),i(this,f).writeBox(a);let s=t-i(this,f).pos;i(this,f).writeBox(Vt(s))}else i(this,f).writeBox(a)}c(this,Y,ue).call(this),i(this,f).finalize(),k(this,oe,!0)}};d=new WeakMap;f=new WeakMap;Te=new WeakMap;A=new WeakMap;E=new WeakMap;S=new WeakMap;Q=new WeakMap;Z=new WeakMap;He=new WeakMap;$=new WeakMap;j=new WeakMap;oe=new WeakMap;De=new WeakSet;ct=function(e){if(typeof e!="object")throw new TypeError("The muxer requires an options object to be passed to its constructor.");if(!(e.target instanceof Ee))throw new TypeError("The target must be provided and an instance of Target.");if(e.video){if(!Wi.includes(e.video.codec))throw new TypeError(`Unsupported video codec: ${e.video.codec}`);if(!Number.isInteger(e.video.width)||e.video.width<=0)throw new TypeError(`Invalid video width: ${e.video.width}. Must be a positive integer.`);if(!Number.isInteger(e.video.height)||e.video.height<=0)throw new TypeError(`Invalid video height: ${e.video.height}. Must be a positive integer.`);let t=e.video.rotation;if(typeof t=="number"&&![0,90,180,270].includes(t))throw new TypeError(`Invalid video rotation: ${t}. Has to be 0, 90, 180 or 270.`);if(Array.isArray(t)&&(t.length!==9||t.some(r=>typeof r!="number")))throw new TypeError(`Invalid video transformation matrix: ${t.join()}`);if(e.video.frameRate!==void 0&&(!Number.isInteger(e.video.frameRate)||e.video.frameRate<=0))throw new TypeError(`Invalid video frame rate: ${e.video.frameRate}. Must be a positive integer.`)}if(e.audio){if(!Ni.includes(e.audio.codec))throw new TypeError(`Unsupported audio codec: ${e.audio.codec}`);if(!Number.isInteger(e.audio.numberOfChannels)||e.audio.numberOfChannels<=0)throw new TypeError(`Invalid number of audio channels: ${e.audio.numberOfChannels}. Must be a positive integer.`);if(!Number.isInteger(e.audio.sampleRate)||e.audio.sampleRate<=0)throw new TypeError(`Invalid audio sample rate: ${e.audio.sampleRate}. Must be a positive integer.`)}if(e.firstTimestampBehavior&&!$i.includes(e.firstTimestampBehavior))throw new TypeError(`Invalid first timestamp behavior: ${e.firstTimestampBehavior}`);if(typeof e.fastStart=="object"){if(e.video){if(e.fastStart.expectedVideoChunks===void 0)throw new TypeError("'fastStart' is an object but is missing property 'expectedVideoChunks'.");if(!Number.isInteger(e.fastStart.expectedVideoChunks)||e.fastStart.expectedVideoChunks<0)throw new TypeError("'expectedVideoChunks' must be a non-negative integer.")}if(e.audio){if(e.fastStart.expectedAudioChunks===void 0)throw new TypeError("'fastStart' is an object but is missing property 'expectedAudioChunks'.");if(!Number.isInteger(e.fastStart.expectedAudioChunks)||e.fastStart.expectedAudioChunks<0)throw new TypeError("'expectedAudioChunks' must be a non-negative integer.")}}else if(![!1,"in-memory","fragmented"].includes(e.fastStart))throw new TypeError("'fastStart' option must be false, 'in-memory', 'fragmented' or an object.");if(e.minFragmentDuration!==void 0&&(!Number.isFinite(e.minFragmentDuration)||e.minFragmentDuration<0))throw new TypeError("'minFragmentDuration' must be a non-negative number.")};Ue=new WeakSet;pt=function(){var e;if(i(this,f).writeBox(Nt({holdsAvc:((e=i(this,d).video)==null?void 0:e.codec)==="avc",fragmented:i(this,d).fastStart==="fragmented"})),k(this,Te,i(this,f).pos),i(this,d).fastStart==="in-memory")k(this,A,Me(!1));else if(i(this,d).fastStart!=="fragmented"){if(typeof i(this,d).fastStart=="object"){let t=c(this,Ge,wt).call(this);i(this,f).seek(i(this,f).pos+t)}k(this,A,Me(!0)),i(this,f).writeBox(i(this,A))}c(this,Y,ue).call(this)};Ge=new WeakSet;wt=function(){if(typeof i(this,d).fastStart!="object")return;let e=0,t=[i(this,d).fastStart.expectedVideoChunks,i(this,d).fastStart.expectedAudioChunks];for(let r of t)r&&(e+=8*Math.ceil(2/3*r),e+=4*r,e+=12*Math.ceil(2/3*r),e+=4*r,e+=8*r);return e+=4096,e};Fe=new WeakSet;vt=function(){if(i(this,d).video&&k(this,E,{id:1,info:{type:"video",codec:i(this,d).video.codec,width:i(this,d).video.width,height:i(this,d).video.height,rotation:i(this,d).video.rotation??0,decoderConfig:null},timescale:i(this,d).video.frameRate??57600,samples:[],finalizedChunks:[],currentChunk:null,firstDecodeTimestamp:void 0,lastDecodeTimestamp:-1,timeToSampleTable:[],compositionTimeOffsetTable:[],lastTimescaleUnits:null,lastSample:null,compactlyCodedChunkTable:[]}),i(this,d).audio&&(k(this,S,{id:i(this,d).video?2:1,info:{type:"audio",codec:i(this,d).audio.codec,numberOfChannels:i(this,d).audio.numberOfChannels,sampleRate:i(this,d).audio.sampleRate,decoderConfig:null},timescale:i(this,d).audio.sampleRate,samples:[],finalizedChunks:[],currentChunk:null,firstDecodeTimestamp:void 0,lastDecodeTimestamp:-1,timeToSampleTable:[],compositionTimeOffsetTable:[],lastTimescaleUnits:null,lastSample:null,compactlyCodedChunkTable:[]}),i(this,d).audio.codec==="aac")){let e=c(this,Ke,gt).call(this,2,i(this,d).audio.sampleRate,i(this,d).audio.numberOfChannels);i(this,S).info.decoderConfig={codec:i(this,d).audio.codec,description:e,numberOfChannels:i(this,d).audio.numberOfChannels,sampleRate:i(this,d).audio.sampleRate}}};Ke=new WeakSet;gt=function(e,t,r){let s=[96e3,88200,64e3,48e3,44100,32e3,24e3,22050,16e3,12e3,11025,8e3,7350].indexOf(t),n=r,o="";o+=e.toString(2).padStart(5,"0"),o+=s.toString(2).padStart(4,"0"),s===15&&(o+=t.toString(2).padStart(24,"0")),o+=n.toString(2).padStart(4,"0");let u=Math.ceil(o.length/8)*8;o=o.padEnd(u,"0");let g=new Uint8Array(o.length/8);for(let w=0;w<o.length;w+=8)g[w/8]=parseInt(o.slice(w,w+8),2);return g};ve=new WeakSet;Le=function(e,t,r,a,s,n,o){let u=a/1e6,g=(a-(o??0))/1e6,w=s/1e6,_=c(this,Xe,yt).call(this,u,g,e);return u=_.presentationTimestamp,g=_.decodeTimestamp,n!=null&&n.decoderConfig&&(e.info.decoderConfig===null?e.info.decoderConfig=n.decoderConfig:Object.assign(e.info.decoderConfig,n.decoderConfig)),{presentationTimestamp:u,decodeTimestamp:g,duration:w,data:t,size:t.byteLength,type:r,timescaleUnitsToNextSample:I(w,e.timescale)}};M=new WeakSet;L=function(e,t){i(this,d).fastStart!=="fragmented"&&e.samples.push(t);let r=I(t.presentationTimestamp-t.decodeTimestamp,e.timescale);if(e.lastTimescaleUnits!==null){let s=I(t.decodeTimestamp,e.timescale,!1),n=Math.round(s-e.lastTimescaleUnits);if(e.lastTimescaleUnits+=n,e.lastSample.timescaleUnitsToNextSample=n,i(this,d).fastStart!=="fragmented"){let o=ye(e.timeToSampleTable);o.sampleCount===1?(o.sampleDelta=n,o.sampleCount++):o.sampleDelta===n?o.sampleCount++:(o.sampleCount--,e.timeToSampleTable.push({sampleCount:2,sampleDelta:n}));let u=ye(e.compositionTimeOffsetTable);u.sampleCompositionTimeOffset===r?u.sampleCount++:e.compositionTimeOffsetTable.push({sampleCount:1,sampleCompositionTimeOffset:r})}}else e.lastTimescaleUnits=0,i(this,d).fastStart!=="fragmented"&&(e.timeToSampleTable.push({sampleCount:1,sampleDelta:I(t.duration,e.timescale)}),e.compositionTimeOffsetTable.push({sampleCount:1,sampleCompositionTimeOffset:r}));e.lastSample=t;let a=!1;if(!e.currentChunk)a=!0;else{let s=t.presentationTimestamp-e.currentChunk.startTimestamp;if(i(this,d).fastStart==="fragmented"){let n=i(this,E)??i(this,S),o=i(this,d).minFragmentDuration??1;e===n&&t.type==="key"&&s>=o&&(a=!0,c(this,ke,Qe).call(this))}else a=s>=.5}a&&(e.currentChunk&&c(this,le,Se).call(this,e),e.currentChunk={startTimestamp:t.presentationTimestamp,samples:[]}),e.currentChunk.samples.push(t)};Xe=new WeakSet;yt=function(e,t,r){var o,u;let a=i(this,d).firstTimestampBehavior==="strict",s=r.lastDecodeTimestamp===-1;if(a&&s&&t!==0)throw new Error(`The first chunk for your media track must have a timestamp of 0 (received DTS=${t}).Non-zero first timestamps are often caused by directly piping frames or audio data from a MediaStreamTrack into the encoder. Their timestamps are typically relative to the age of thedocument, which is probably what you want.
+
+If you want to offset all timestamps of a track such that the first one is zero, set firstTimestampBehavior: 'offset' in the options.
+`);if(i(this,d).firstTimestampBehavior==="offset"||i(this,d).firstTimestampBehavior==="cross-track-offset"){r.firstDecodeTimestamp===void 0&&(r.firstDecodeTimestamp=t);let g;i(this,d).firstTimestampBehavior==="offset"?g=r.firstDecodeTimestamp:g=Math.min(((o=i(this,E))==null?void 0:o.firstDecodeTimestamp)??1/0,((u=i(this,S))==null?void 0:u.firstDecodeTimestamp)??1/0),t-=g,e-=g}if(t<r.lastDecodeTimestamp)throw new Error(`Timestamps must be monotonically increasing (DTS went from ${r.lastDecodeTimestamp*1e6} to ${t*1e6}).`);return r.lastDecodeTimestamp=t,{presentationTimestamp:e,decodeTimestamp:t}};le=new WeakSet;Se=function(e){if(i(this,d).fastStart==="fragmented")throw new Error("Can't finalize individual chunks if 'fastStart' is set to 'fragmented'.");if(e.currentChunk){if(e.finalizedChunks.push(e.currentChunk),i(this,Z).push(e.currentChunk),(e.compactlyCodedChunkTable.length===0||ye(e.compactlyCodedChunkTable).samplesPerChunk!==e.currentChunk.samples.length)&&e.compactlyCodedChunkTable.push({firstChunk:e.finalizedChunks.length,samplesPerChunk:e.currentChunk.samples.length}),i(this,d).fastStart==="in-memory"){e.currentChunk.offset=0;return}e.currentChunk.offset=i(this,f).pos;for(let t of e.currentChunk.samples)i(this,f).write(t.data),t.data=null;c(this,Y,ue).call(this)}};ke=new WeakSet;Qe=function(e=!0){if(i(this,d).fastStart!=="fragmented")throw new Error("Can't finalize a fragment unless 'fastStart' is set to 'fragmented'.");let t=[i(this,E),i(this,S)].filter(u=>u&&u.currentChunk);if(t.length===0)return;let r=Rt(this,He)._++;if(r===1){let u=ce(t,i(this,Q),!0);i(this,f).writeBox(u)}let a=i(this,f).pos,s=at(r,t);i(this,f).writeBox(s);{let u=Me(!1),g=0;for(let _ of t)for(let W of _.currentChunk.samples)g+=W.size;let w=i(this,f).measureBox(u)+g;w>=2**32&&(u.largeSize=!0,w=i(this,f).measureBox(u)+g),u.size=w,i(this,f).writeBox(u)}for(let u of t){u.currentChunk.offset=i(this,f).pos,u.currentChunk.moofOffset=a;for(let g of u.currentChunk.samples)i(this,f).write(g.data),g.data=null}let n=i(this,f).pos;i(this,f).seek(i(this,f).offsets.get(s));let o=at(r,t);i(this,f).writeBox(o),i(this,f).seek(n);for(let u of t)u.finalizedChunks.push(u.currentChunk),i(this,Z).push(u.currentChunk),u.currentChunk=null;e&&c(this,Y,ue).call(this)};Y=new WeakSet;ue=function(){i(this,f)instanceof qe&&i(this,f).flush()};ge=new WeakSet;Re=function(){if(i(this,oe))throw new Error("Cannot add new video or audio chunks after the file has been finalized.")};var K=30,_e=150,Be=9,kt=90,Ae=_e+Be+kt+Be,G=Ae/K,ji=1280,h={open:null,blink:null,playing:!1,playStartedAt:0,pausedAt:0,raf:0,outputBlob:null,outputUrl:null},T=e=>document.querySelector(e),Et=T("#openInput"),_t=T("#blinkInput"),tt=T("#openDropzone"),it=T("#blinkDropzone"),At=T("#openPreview"),Bt=T("#blinkPreview"),de=T("#previewCanvas"),qi=de.getContext("2d",{alpha:!1}),Hi=T("#stage"),D=T("#playButton"),Ze=T("#currentTime"),Je=T("#progressBar"),Ye=T("#progressKnob"),zt=T("#stateChip"),ee=T("#exportButton"),Ct=T("#exportProgressText"),et=T("#resultActions"),Gi=T("#shareButton"),Ki=T("#downloadButton"),Tt=T("#statusMessage");function P(e="",t=!1){Tt.textContent=e,Tt.classList.toggle("error",t)}function Mt(){h.outputBlob=null,h.outputUrl&&URL.revokeObjectURL(h.outputUrl),h.outputUrl=null,et.classList.remove("visible"),P("")}function Xi(e){return new Promise((t,r)=>{if(!e||!e.type.startsWith("image/")){r(new Error("Please choose a PNG, JPG or WebP image."));return}let a=new FileReader,s=new Image;a.onerror=()=>r(new Error("That image could not be read. Try another one.")),a.onload=()=>{let n=a.result;s.onload=()=>t({image:s,url:n,name:e.name}),s.onerror=()=>r(new Error("That image could not be opened. Try a PNG or JPG.")),s.src=n},a.readAsDataURL(e)})}async function St(e,t){try{let r=await Xi(t);h[e]=r;let a=e==="open"?tt:it,s=e==="open"?At:Bt;s.style.backgroundImage=`url("${r.url.replace(/"/g,"%22")}")`,a.classList.add("loaded"),Mt(),xt(),h.open&&h.blink||P(`${e==="open"?"Open eyes":"Blink"} image added. Add the other image.`)}catch(r){P(r.message,!0)}}function Qi(e){h[e]=null;let t=e==="open"?tt:it,r=e==="open"?At:Bt,a=e==="open"?Et:_t;r.style.backgroundImage="",t.classList.remove("loaded"),a.value="",Ut(!0),Mt(),xt()}function Ot(){let e=(h.open||h.blink).image,t=Math.min(1,ji/Math.max(e.naturalWidth,e.naturalHeight)),r=a=>Math.max(2,Math.round(a/2)*2);return{width:r(e.naturalWidth*t),height:r(e.naturalHeight*t)}}function rt(e,t=qi,r=de){let{width:a,height:s}=r;t.fillStyle="#000",t.fillRect(0,0,a,s);let n=Math.max(a/e.naturalWidth,s/e.naturalHeight),o=e.naturalWidth*n,u=e.naturalHeight*n;t.drawImage(e,(a-o)/2,(s-u)/2,o,u)}function Zi(e){return e<5?{image:h.open.image,label:"OPEN"}:e<5.3?{image:h.blink.image,label:"BLINK"}:e<8.3?{image:h.open.image,label:"OPEN"}:{image:h.blink.image,label:"BLINK"}}function Ji(e){return e<_e?h.open.image:e<_e+Be?h.blink.image:e<_e+Be+kt?h.open.image:h.blink.image}function It(e){let t=Math.max(0,Math.min(e,G)),r=t===G?G-1e-4:t,a=Zi(r);rt(a.image),zt.textContent=a.label,Ze.textContent=`${t.toFixed(1)}s`;let s=t/G*100;Je.style.width=`${s}%`,Ye.style.left=`${s}%`}function xt(){let e=!!(h.open&&h.blink),t=!!(h.open||h.blink);if(Hi.classList.toggle("ready",t),D.disabled=!e,ee.disabled=!e,t){let r=Ot();if(de.width=r.width,de.height=r.height,de.style.aspectRatio=`${r.width} / ${r.height}`,e)It(0);else{let a=h.open||h.blink;rt(a.image),zt.textContent=h.open?"OPEN":"BLINK",Ze.textContent="0.0s",Je.style.width="0%",Ye.style.left="0%"}}else Ze.textContent="0.0s",Je.style.width="0%",Ye.style.left="0%"}function Dt(e){if(!h.playing)return;let t=Math.min((e-h.playStartedAt)/1e3,G);if(h.pausedAt=t,It(t),t>=G){h.playing=!1,h.pausedAt=0,D.classList.remove("playing"),D.setAttribute("aria-label","Play preview");return}h.raf=requestAnimationFrame(Dt)}function Yi(){if(!(!h.open||!h.blink)){if(h.playing){h.playing=!1,cancelAnimationFrame(h.raf),D.classList.remove("playing"),D.setAttribute("aria-label","Play preview");return}h.pausedAt>=G&&(h.pausedAt=0),h.playStartedAt=performance.now()-h.pausedAt*1e3,h.playing=!0,D.classList.add("playing"),D.setAttribute("aria-label","Pause preview"),h.raf=requestAnimationFrame(Dt)}}function Ut(e=!1){h.playing=!1,cancelAnimationFrame(h.raf),D.classList.remove("playing"),D.setAttribute("aria-label","Play preview"),e&&(h.pausedAt=0)}async function er(e){for(;e.encodeQueueSize>12;)await new Promise(t=>setTimeout(t,8))}async function tr(e,t){let r=[{codec:"avc1.420028",width:e,height:t,bitrate:6e6,framerate:K,latencyMode:"quality",avc:{format:"avc"}},{codec:"avc1.4d0028",width:e,height:t,bitrate:6e6,framerate:K,latencyMode:"quality",avc:{format:"avc"}},{codec:"avc1.42001f",width:e,height:t,bitrate:6e6,framerate:K,latencyMode:"quality",avc:{format:"avc"}}];for(let a of r)try{if((await VideoEncoder.isConfigSupported(a)).supported)return a}catch{}throw new Error("MP4 export is not supported in this browser. Try current Safari, Chrome or Edge.")}async function ir(){if(!(!h.open||!h.blink)){if(!("VideoEncoder"in window)||!("VideoFrame"in window)){P("This browser cannot create MP4 files. Try current Safari, Chrome or Edge.",!0);return}Ut(!0),ee.classList.add("exporting"),ee.disabled=!0,et.classList.remove("visible"),P("Keeping all 258 frames exact\u2026");try{let{width:e,height:t}=Ot(),r=document.createElement("canvas");r.width=e,r.height=t;let a=r.getContext("2d",{alpha:!1,desynchronized:!0}),s=new Ve,n=new bt({target:s,video:{codec:"avc",width:e,height:t,frameRate:K},fastStart:"in-memory",firstTimestampBehavior:"offset"}),o=null,u=new VideoEncoder({output:(w,_)=>n.addVideoChunk(w,_),error:w=>{o=w}});u.configure(await tr(e,t));let g=null;for(let w=0;w<Ae;w+=1){let _=Ji(w);_!==g&&(rt(_,a,r),g=_);let W=Math.round(w*1e6/K),fe=Math.round((w+1)*1e6/K),te=new VideoFrame(r,{timestamp:W,duration:fe-W});if(u.encode(te,{keyFrame:w===0||w%60===0}),te.close(),await er(u),o)throw o;if(w%6===0||w===Ae-1){let U=Math.round((w+1)/Ae*100);Ct.textContent=`Rendering ${U}%`,w%30===0&&await new Promise(requestAnimationFrame)}}if(await u.flush(),o)throw o;u.close(),n.finalize(),h.outputUrl&&URL.revokeObjectURL(h.outputUrl),h.outputBlob=new Blob([s.buffer],{type:"video/mp4"}),h.outputUrl=URL.createObjectURL(h.outputBlob),et.classList.add("visible"),P(`Done \u2014 exact 8.6s MP4 \u2022 ${(h.outputBlob.size/1024/1024).toFixed(1)} MB`)}catch(e){console.error(e),P((e==null?void 0:e.message)||"The export failed. Try smaller images or another browser.",!0)}finally{ee.classList.remove("exporting"),ee.disabled=!(h.open&&h.blink),Ct.textContent="Rendering 0%"}}}function rr(){return new File([h.outputBlob],"blinkcut-8.6s.mp4",{type:"video/mp4",lastModified:Date.now()})}async function ar(){var t;if(!h.outputBlob)return;let e=rr();if((t=navigator.canShare)!=null&&t.call(navigator,{files:[e]}))try{await navigator.share({files:[e],title:"BlinkCut video"}),P("Share sheet opened. On iPad, choose \u201CSave Video\u201D.");return}catch(r){if(r.name==="AbortError")return}Ft(),P("Downloaded. On iPad, open it from Downloads and tap Share \u2192 Save Video.")}function Ft(){if(!h.outputUrl)return;let e=document.createElement("a");e.href=h.outputUrl,e.download="blinkcut-8.6s.mp4",document.body.appendChild(e),e.click(),e.remove()}function Lt(e,t,r){t.addEventListener("change",()=>St(r,t.files[0])),["dragenter","dragover"].forEach(a=>{e.addEventListener(a,s=>{s.preventDefault(),e.classList.add("dragging")})}),["dragleave","drop"].forEach(a=>{e.addEventListener(a,s=>{s.preventDefault(),e.classList.remove("dragging")})}),e.addEventListener("drop",a=>St(r,a.dataTransfer.files[0]))}Lt(tt,Et,"open");Lt(it,_t,"blink");document.querySelectorAll(".remove-image").forEach(e=>{e.addEventListener("click",t=>{t.preventDefault(),t.stopPropagation(),Qi(e.dataset.remove)})});D.addEventListener("click",Yi);ee.addEventListener("click",ir);Gi.addEventListener("click",ar);Ki.addEventListener("click",Ft);window.addEventListener("beforeunload",()=>{h.outputUrl&&URL.revokeObjectURL(h.outputUrl)});})();
+</script>
+</body>
+</html>

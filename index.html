@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0d0e12">
-  <meta name="description" content="Turn an open-eyes image and a blink image into an exact 8.6-second MP4.">
+  <meta name="description" content="Turn an open-eyes image and a blink image into an exact 8.6-second MP4 or GIF.">
   <title>BlinkCut</title>
   <style>:root {
   color-scheme: dark;
@@ -144,7 +144,9 @@ button { -webkit-tap-highlight-color: transparent; }
 #progressKnob { position: absolute; left: 0; top: 50%; width: 9px; height: 9px; border: 2px solid #d8d0ff; border-radius: 50%; background: var(--purple-strong); transform: translate(-50%, -50%); }
 
 .export-button, .save-button, .download-button { display: flex; align-items: center; justify-content: center; border: 0; border-radius: 13px; cursor: pointer; font-weight: 750; }
+.export-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .export-button { width: 100%; min-height: 52px; padding: 0 18px; color: white; background: linear-gradient(135deg, #8d6dff, #6e4bf0); box-shadow: 0 13px 30px rgba(101, 70, 221, .24); }
+.export-button.gif-export { background: linear-gradient(135deg, #ec5da8, #a64bf0); box-shadow: 0 13px 30px rgba(210, 75, 178, .2); }
 .export-button:disabled { color: #777985; background: #282931; box-shadow: none; cursor: default; }
 .export-label, .export-progress { align-items: center; gap: 9px; }
 .export-label { display: flex; }
@@ -183,6 +185,7 @@ button { -webkit-tap-highlight-color: transparent; }
   .timeline > div { padding: 0 7px; }
   .timeline-blink { padding: 0 5px !important; }
   .stage { min-height: 285px; }
+  .export-grid { grid-template-columns: 1fr; }
   .result-actions { grid-template-columns: 1fr; }
 }
 
@@ -203,7 +206,7 @@ button { -webkit-tap-highlight-color: transparent; }
         </span>
         <span>BlinkCut</span>
       </a>
-      <span class="duration-pill"><span></span> 8.6 sec MP4</span>
+      <span class="duration-pill"><span></span> MP4 + GIF</span>
     </header>
 
     <section class="hero">
@@ -303,10 +306,16 @@ button { -webkit-tap-highlight-color: transparent; }
           </div>
         </div>
 
-        <button class="export-button" id="exportButton" type="button" disabled>
-          <span class="export-label"><svg viewBox="0 0 24 24"><path d="M12 4v11m0 0 4-4m-4 4-4-4M5 19h14"/></svg> Create MP4</span>
-          <span class="export-progress"><span class="spinner"></span><span id="exportProgressText">Rendering 0%</span></span>
-        </button>
+        <div class="export-grid">
+          <button class="export-button" id="exportButton" type="button" disabled>
+            <span class="export-label"><svg viewBox="0 0 24 24"><path d="M12 4v11m0 0 4-4m-4 4-4-4M5 19h14"/></svg> Create MP4</span>
+            <span class="export-progress"><span class="spinner"></span><span id="exportProgressText">Rendering 0%</span></span>
+          </button>
+          <button class="export-button gif-export" id="gifExportButton" type="button" disabled>
+            <span class="export-label"><svg viewBox="0 0 24 24"><path d="M12 4v11m0 0 4-4m-4 4-4-4M5 19h14"/></svg> Create GIF</span>
+            <span class="export-progress"><span class="spinner"></span><span id="gifProgressText">Rendering 0%</span></span>
+          </button>
+        </div>
 
         <div class="result-actions" id="resultActions">
           <button class="save-button" id="shareButton" type="button">
@@ -316,6 +325,17 @@ button { -webkit-tap-highlight-color: transparent; }
           <button class="download-button" id="downloadButton" type="button">
             <svg viewBox="0 0 24 24"><path d="M12 4v12m0 0 5-5m-5 5-5-5M5 20h14"/></svg>
             Download MP4
+          </button>
+        </div>
+
+        <div class="result-actions" id="gifResultActions">
+          <button class="save-button" id="gifShareButton" type="button">
+            <svg viewBox="0 0 24 24"><path d="M12 16V4m0 0L8 8m4-4 4 4M6 11H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-1"/></svg>
+            Save / Share GIF
+          </button>
+          <button class="download-button" id="gifDownloadButton" type="button">
+            <svg viewBox="0 0 24 24"><path d="M12 4v12m0 0 5-5m-5 5-5-5M5 20h14"/></svg>
+            Download GIF
           </button>
         </div>
 
@@ -329,6 +349,287 @@ button { -webkit-tap-highlight-color: transparent; }
 
 If you want to offset all timestamps of a track such that the first one is zero, set firstTimestampBehavior: 'offset' in the options.
 `);if(i(this,d).firstTimestampBehavior==="offset"||i(this,d).firstTimestampBehavior==="cross-track-offset"){r.firstDecodeTimestamp===void 0&&(r.firstDecodeTimestamp=t);let g;i(this,d).firstTimestampBehavior==="offset"?g=r.firstDecodeTimestamp:g=Math.min(((o=i(this,E))==null?void 0:o.firstDecodeTimestamp)??1/0,((u=i(this,S))==null?void 0:u.firstDecodeTimestamp)??1/0),t-=g,e-=g}if(t<r.lastDecodeTimestamp)throw new Error(`Timestamps must be monotonically increasing (DTS went from ${r.lastDecodeTimestamp*1e6} to ${t*1e6}).`);return r.lastDecodeTimestamp=t,{presentationTimestamp:e,decodeTimestamp:t}};le=new WeakSet;Se=function(e){if(i(this,d).fastStart==="fragmented")throw new Error("Can't finalize individual chunks if 'fastStart' is set to 'fragmented'.");if(e.currentChunk){if(e.finalizedChunks.push(e.currentChunk),i(this,Z).push(e.currentChunk),(e.compactlyCodedChunkTable.length===0||ye(e.compactlyCodedChunkTable).samplesPerChunk!==e.currentChunk.samples.length)&&e.compactlyCodedChunkTable.push({firstChunk:e.finalizedChunks.length,samplesPerChunk:e.currentChunk.samples.length}),i(this,d).fastStart==="in-memory"){e.currentChunk.offset=0;return}e.currentChunk.offset=i(this,f).pos;for(let t of e.currentChunk.samples)i(this,f).write(t.data),t.data=null;c(this,Y,ue).call(this)}};ke=new WeakSet;Qe=function(e=!0){if(i(this,d).fastStart!=="fragmented")throw new Error("Can't finalize a fragment unless 'fastStart' is set to 'fragmented'.");let t=[i(this,E),i(this,S)].filter(u=>u&&u.currentChunk);if(t.length===0)return;let r=Rt(this,He)._++;if(r===1){let u=ce(t,i(this,Q),!0);i(this,f).writeBox(u)}let a=i(this,f).pos,s=at(r,t);i(this,f).writeBox(s);{let u=Me(!1),g=0;for(let _ of t)for(let W of _.currentChunk.samples)g+=W.size;let w=i(this,f).measureBox(u)+g;w>=2**32&&(u.largeSize=!0,w=i(this,f).measureBox(u)+g),u.size=w,i(this,f).writeBox(u)}for(let u of t){u.currentChunk.offset=i(this,f).pos,u.currentChunk.moofOffset=a;for(let g of u.currentChunk.samples)i(this,f).write(g.data),g.data=null}let n=i(this,f).pos;i(this,f).seek(i(this,f).offsets.get(s));let o=at(r,t);i(this,f).writeBox(o),i(this,f).seek(n);for(let u of t)u.finalizedChunks.push(u.currentChunk),i(this,Z).push(u.currentChunk),u.currentChunk=null;e&&c(this,Y,ue).call(this)};Y=new WeakSet;ue=function(){i(this,f)instanceof qe&&i(this,f).flush()};ge=new WeakSet;Re=function(){if(i(this,oe))throw new Error("Cannot add new video or audio chunks after the file has been finalized.")};var K=30,_e=150,Be=9,kt=90,Ae=_e+Be+kt+Be,G=Ae/K,ji=1280,h={open:null,blink:null,playing:!1,playStartedAt:0,pausedAt:0,raf:0,outputBlob:null,outputUrl:null},T=e=>document.querySelector(e),Et=T("#openInput"),_t=T("#blinkInput"),tt=T("#openDropzone"),it=T("#blinkDropzone"),At=T("#openPreview"),Bt=T("#blinkPreview"),de=T("#previewCanvas"),qi=de.getContext("2d",{alpha:!1}),Hi=T("#stage"),D=T("#playButton"),Ze=T("#currentTime"),Je=T("#progressBar"),Ye=T("#progressKnob"),zt=T("#stateChip"),ee=T("#exportButton"),Ct=T("#exportProgressText"),et=T("#resultActions"),Gi=T("#shareButton"),Ki=T("#downloadButton"),Tt=T("#statusMessage");function P(e="",t=!1){Tt.textContent=e,Tt.classList.toggle("error",t)}function Mt(){h.outputBlob=null,h.outputUrl&&URL.revokeObjectURL(h.outputUrl),h.outputUrl=null,et.classList.remove("visible"),P("")}function Xi(e){return new Promise((t,r)=>{if(!e||!e.type.startsWith("image/")){r(new Error("Please choose a PNG, JPG or WebP image."));return}let a=new FileReader,s=new Image;a.onerror=()=>r(new Error("That image could not be read. Try another one.")),a.onload=()=>{let n=a.result;s.onload=()=>t({image:s,url:n,name:e.name}),s.onerror=()=>r(new Error("That image could not be opened. Try a PNG or JPG.")),s.src=n},a.readAsDataURL(e)})}async function St(e,t){try{let r=await Xi(t);h[e]=r;let a=e==="open"?tt:it,s=e==="open"?At:Bt;s.style.backgroundImage=`url("${r.url.replace(/"/g,"%22")}")`,a.classList.add("loaded"),Mt(),xt(),h.open&&h.blink||P(`${e==="open"?"Open eyes":"Blink"} image added. Add the other image.`)}catch(r){P(r.message,!0)}}function Qi(e){h[e]=null;let t=e==="open"?tt:it,r=e==="open"?At:Bt,a=e==="open"?Et:_t;r.style.backgroundImage="",t.classList.remove("loaded"),a.value="",Ut(!0),Mt(),xt()}function Ot(){let e=(h.open||h.blink).image,t=Math.min(1,ji/Math.max(e.naturalWidth,e.naturalHeight)),r=a=>Math.max(2,Math.round(a/2)*2);return{width:r(e.naturalWidth*t),height:r(e.naturalHeight*t)}}function rt(e,t=qi,r=de){let{width:a,height:s}=r;t.fillStyle="#000",t.fillRect(0,0,a,s);let n=Math.max(a/e.naturalWidth,s/e.naturalHeight),o=e.naturalWidth*n,u=e.naturalHeight*n;t.drawImage(e,(a-o)/2,(s-u)/2,o,u)}function Zi(e){return e<5?{image:h.open.image,label:"OPEN"}:e<5.3?{image:h.blink.image,label:"BLINK"}:e<8.3?{image:h.open.image,label:"OPEN"}:{image:h.blink.image,label:"BLINK"}}function Ji(e){return e<_e?h.open.image:e<_e+Be?h.blink.image:e<_e+Be+kt?h.open.image:h.blink.image}function It(e){let t=Math.max(0,Math.min(e,G)),r=t===G?G-1e-4:t,a=Zi(r);rt(a.image),zt.textContent=a.label,Ze.textContent=`${t.toFixed(1)}s`;let s=t/G*100;Je.style.width=`${s}%`,Ye.style.left=`${s}%`}function xt(){let e=!!(h.open&&h.blink),t=!!(h.open||h.blink);if(Hi.classList.toggle("ready",t),D.disabled=!e,ee.disabled=!e,t){let r=Ot();if(de.width=r.width,de.height=r.height,de.style.aspectRatio=`${r.width} / ${r.height}`,e)It(0);else{let a=h.open||h.blink;rt(a.image),zt.textContent=h.open?"OPEN":"BLINK",Ze.textContent="0.0s",Je.style.width="0%",Ye.style.left="0%"}}else Ze.textContent="0.0s",Je.style.width="0%",Ye.style.left="0%"}function Dt(e){if(!h.playing)return;let t=Math.min((e-h.playStartedAt)/1e3,G);if(h.pausedAt=t,It(t),t>=G){h.playing=!1,h.pausedAt=0,D.classList.remove("playing"),D.setAttribute("aria-label","Play preview");return}h.raf=requestAnimationFrame(Dt)}function Yi(){if(!(!h.open||!h.blink)){if(h.playing){h.playing=!1,cancelAnimationFrame(h.raf),D.classList.remove("playing"),D.setAttribute("aria-label","Play preview");return}h.pausedAt>=G&&(h.pausedAt=0),h.playStartedAt=performance.now()-h.pausedAt*1e3,h.playing=!0,D.classList.add("playing"),D.setAttribute("aria-label","Pause preview"),h.raf=requestAnimationFrame(Dt)}}function Ut(e=!1){h.playing=!1,cancelAnimationFrame(h.raf),D.classList.remove("playing"),D.setAttribute("aria-label","Play preview"),e&&(h.pausedAt=0)}async function er(e){for(;e.encodeQueueSize>12;)await new Promise(t=>setTimeout(t,8))}async function tr(e,t){let r=[{codec:"avc1.420028",width:e,height:t,bitrate:6e6,framerate:K,latencyMode:"quality",avc:{format:"avc"}},{codec:"avc1.4d0028",width:e,height:t,bitrate:6e6,framerate:K,latencyMode:"quality",avc:{format:"avc"}},{codec:"avc1.42001f",width:e,height:t,bitrate:6e6,framerate:K,latencyMode:"quality",avc:{format:"avc"}}];for(let a of r)try{if((await VideoEncoder.isConfigSupported(a)).supported)return a}catch{}throw new Error("MP4 export is not supported in this browser. Try current Safari, Chrome or Edge.")}async function ir(){if(!(!h.open||!h.blink)){if(!("VideoEncoder"in window)||!("VideoFrame"in window)){P("This browser cannot create MP4 files. Try current Safari, Chrome or Edge.",!0);return}Ut(!0),ee.classList.add("exporting"),ee.disabled=!0,et.classList.remove("visible"),P("Keeping all 258 frames exact\u2026");try{let{width:e,height:t}=Ot(),r=document.createElement("canvas");r.width=e,r.height=t;let a=r.getContext("2d",{alpha:!1,desynchronized:!0}),s=new Ve,n=new bt({target:s,video:{codec:"avc",width:e,height:t,frameRate:K},fastStart:"in-memory",firstTimestampBehavior:"offset"}),o=null,u=new VideoEncoder({output:(w,_)=>n.addVideoChunk(w,_),error:w=>{o=w}});u.configure(await tr(e,t));let g=null;for(let w=0;w<Ae;w+=1){let _=Ji(w);_!==g&&(rt(_,a,r),g=_);let W=Math.round(w*1e6/K),fe=Math.round((w+1)*1e6/K),te=new VideoFrame(r,{timestamp:W,duration:fe-W});if(u.encode(te,{keyFrame:w===0||w%60===0}),te.close(),await er(u),o)throw o;if(w%6===0||w===Ae-1){let U=Math.round((w+1)/Ae*100);Ct.textContent=`Rendering ${U}%`,w%30===0&&await new Promise(requestAnimationFrame)}}if(await u.flush(),o)throw o;u.close(),n.finalize(),h.outputUrl&&URL.revokeObjectURL(h.outputUrl),h.outputBlob=new Blob([s.buffer],{type:"video/mp4"}),h.outputUrl=URL.createObjectURL(h.outputBlob),et.classList.add("visible"),P(`Done \u2014 exact 8.6s MP4 \u2022 ${(h.outputBlob.size/1024/1024).toFixed(1)} MB`)}catch(e){console.error(e),P((e==null?void 0:e.message)||"The export failed. Try smaller images or another browser.",!0)}finally{ee.classList.remove("exporting"),ee.disabled=!(h.open&&h.blink),Ct.textContent="Rendering 0%"}}}function rr(){return new File([h.outputBlob],"blinkcut-8.6s.mp4",{type:"video/mp4",lastModified:Date.now()})}async function ar(){var t;if(!h.outputBlob)return;let e=rr();if((t=navigator.canShare)!=null&&t.call(navigator,{files:[e]}))try{await navigator.share({files:[e],title:"BlinkCut video"}),P("Share sheet opened. On iPad, choose \u201CSave Video\u201D.");return}catch(r){if(r.name==="AbortError")return}Ft(),P("Downloaded. On iPad, open it from Downloads and tap Share \u2192 Save Video.")}function Ft(){if(!h.outputUrl)return;let e=document.createElement("a");e.href=h.outputUrl,e.download="blinkcut-8.6s.mp4",document.body.appendChild(e),e.click(),e.remove()}function Lt(e,t,r){t.addEventListener("change",()=>St(r,t.files[0])),["dragenter","dragover"].forEach(a=>{e.addEventListener(a,s=>{s.preventDefault(),e.classList.add("dragging")})}),["dragleave","drop"].forEach(a=>{e.addEventListener(a,s=>{s.preventDefault(),e.classList.remove("dragging")})}),e.addEventListener("drop",a=>St(r,a.dataTransfer.files[0]))}Lt(tt,Et,"open");Lt(it,_t,"blink");document.querySelectorAll(".remove-image").forEach(e=>{e.addEventListener("click",t=>{t.preventDefault(),t.stopPropagation(),Qi(e.dataset.remove)})});D.addEventListener("click",Yi);ee.addEventListener("click",ir);Gi.addEventListener("click",ar);Ki.addEventListener("click",Ft);window.addEventListener("beforeunload",()=>{h.outputUrl&&URL.revokeObjectURL(h.outputUrl)});})();
+</script>
+<script>
+(() => {
+  const gifButton = document.querySelector("#gifExportButton");
+  const gifProgress = document.querySelector("#gifProgressText");
+  const gifActions = document.querySelector("#gifResultActions");
+  const gifShareButton = document.querySelector("#gifShareButton");
+  const gifDownloadButton = document.querySelector("#gifDownloadButton");
+  const status = document.querySelector("#statusMessage");
+  const openDropzone = document.querySelector("#openDropzone");
+  const blinkDropzone = document.querySelector("#blinkDropzone");
+  let gifBlob = null;
+  let gifUrl = null;
+
+  const bytes = (...values) => Uint8Array.from(values);
+  const ascii = (value) =>
+    Uint8Array.from([...value].map((character) => character.charCodeAt(0)));
+  const little16 = (value) => bytes(value & 255, (value >> 8) & 255);
+
+  function setStatus(message, error = false) {
+    status.textContent = message;
+    status.classList.toggle("error", error);
+  }
+
+  function resetGif() {
+    gifBlob = null;
+    if (gifUrl) URL.revokeObjectURL(gifUrl);
+    gifUrl = null;
+    gifActions.classList.remove("visible");
+  }
+
+  function updateGifButton() {
+    gifButton.disabled = !(
+      openDropzone.classList.contains("loaded") &&
+      blinkDropzone.classList.contains("loaded")
+    );
+  }
+
+  function previewSource(selector) {
+    const value = document.querySelector(selector).style.backgroundImage;
+    const match = value.match(/^url\((?:"|')?(.*?)(?:"|')?\)$/);
+    return match?.[1] || "";
+  }
+
+  function loadImage(source) {
+    return new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = () => reject(new Error("One of the images could not be opened."));
+      image.src = source;
+    });
+  }
+
+  function renderIndexedFrame(image, width, height) {
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d", {
+      alpha: false,
+      willReadFrequently: true,
+    });
+    context.fillStyle = "#000";
+    context.fillRect(0, 0, width, height);
+    const scale = Math.max(width / image.naturalWidth, height / image.naturalHeight);
+    const drawnWidth = image.naturalWidth * scale;
+    const drawnHeight = image.naturalHeight * scale;
+    context.drawImage(
+      image,
+      (width - drawnWidth) / 2,
+      (height - drawnHeight) / 2,
+      drawnWidth,
+      drawnHeight,
+    );
+    const rgba = context.getImageData(0, 0, width, height).data;
+    const indexed = new Uint8Array(width * height);
+    for (let source = 0, target = 0; target < indexed.length; source += 4, target += 1) {
+      indexed[target] =
+        ((rgba[source] >> 5) << 5) |
+        ((rgba[source + 1] >> 5) << 2) |
+        (rgba[source + 2] >> 6);
+    }
+    return indexed;
+  }
+
+  function colourTable() {
+    const table = new Uint8Array(256 * 3);
+    for (let index = 0; index < 256; index += 1) {
+      table[index * 3] = Math.round(((index >> 5) & 7) * 255 / 7);
+      table[index * 3 + 1] = Math.round(((index >> 2) & 7) * 255 / 7);
+      table[index * 3 + 2] = Math.round((index & 3) * 255 / 3);
+    }
+    return table;
+  }
+
+  function lzwEncode(indexed) {
+    const clearCode = 256;
+    const endCode = 257;
+    const output = [];
+    let codeSize = 9;
+    let nextCode = 258;
+    let bitBuffer = 0;
+    let bitCount = 0;
+    let dictionary = new Map();
+
+    const writeCode = (code) => {
+      bitBuffer |= code << bitCount;
+      bitCount += codeSize;
+      while (bitCount >= 8) {
+        output.push(bitBuffer & 255);
+        bitBuffer >>>= 8;
+        bitCount -= 8;
+      }
+    };
+    const resetDictionary = () => {
+      dictionary = new Map();
+      codeSize = 9;
+      nextCode = 258;
+    };
+
+    writeCode(clearCode);
+    let prefix = indexed[0];
+    for (let index = 1; index < indexed.length; index += 1) {
+      const suffix = indexed[index];
+      const key = prefix * 256 + suffix;
+      const existing = dictionary.get(key);
+      if (existing !== undefined) {
+        prefix = existing;
+        continue;
+      }
+      writeCode(prefix);
+      if (nextCode < 4096) {
+        dictionary.set(key, nextCode);
+        nextCode += 1;
+        if (nextCode === 1 << codeSize && codeSize < 12) codeSize += 1;
+      } else {
+        writeCode(clearCode);
+        resetDictionary();
+      }
+      prefix = suffix;
+    }
+    writeCode(prefix);
+    writeCode(endCode);
+    if (bitCount > 0) output.push(bitBuffer & 255);
+    return Uint8Array.from(output);
+  }
+
+  function dataSubBlocks(data) {
+    const blockCount = Math.ceil(data.length / 255);
+    const packed = new Uint8Array(data.length + blockCount + 1);
+    let source = 0;
+    let target = 0;
+    while (source < data.length) {
+      const length = Math.min(255, data.length - source);
+      packed[target++] = length;
+      packed.set(data.subarray(source, source + length), target);
+      target += length;
+      source += length;
+    }
+    packed[target] = 0;
+    return packed;
+  }
+
+  async function encodeGif(width, height, frames) {
+    const parts = [
+      ascii("GIF89a"),
+      little16(width),
+      little16(height),
+      bytes(0xf7, 0, 0),
+      colourTable(),
+      bytes(0x21, 0xff, 0x0b),
+      ascii("NETSCAPE2.0"),
+      bytes(0x03, 0x01, 0x00, 0x00, 0x00),
+    ];
+    for (let index = 0; index < frames.length; index += 1) {
+      const frame = frames[index];
+      const delay = little16(frame.delay);
+      parts.push(
+        bytes(0x21, 0xf9, 0x04, 0x04, delay[0], delay[1], 0x00, 0x00),
+        bytes(0x2c),
+        little16(0),
+        little16(0),
+        little16(width),
+        little16(height),
+        bytes(0x00, 0x08),
+        dataSubBlocks(lzwEncode(frame.indexed)),
+      );
+      gifProgress.textContent = `Rendering ${Math.round(((index + 1) / frames.length) * 100)}%`;
+      await new Promise(requestAnimationFrame);
+    }
+    parts.push(bytes(0x3b));
+    return new Blob(parts, { type: "image/gif" });
+  }
+
+  async function createGif() {
+    if (gifButton.disabled) return;
+    resetGif();
+    gifButton.classList.add("exporting");
+    gifButton.disabled = true;
+    setStatus("Preparing your exact 8.6-second GIF…");
+    try {
+      const [openImage, blinkImage] = await Promise.all([
+        loadImage(previewSource("#openPreview")),
+        loadImage(previewSource("#blinkPreview")),
+      ]);
+      const scale = Math.min(
+        1,
+        1280 / Math.max(openImage.naturalWidth, openImage.naturalHeight),
+      );
+      const even = (value) => Math.max(2, Math.round(value / 2) * 2);
+      const width = even(openImage.naturalWidth * scale);
+      const height = even(openImage.naturalHeight * scale);
+      gifProgress.textContent = "Preparing colours…";
+      const openIndexed = renderIndexedFrame(openImage, width, height);
+      await new Promise(requestAnimationFrame);
+      const blinkIndexed = renderIndexedFrame(blinkImage, width, height);
+      gifBlob = await encodeGif(width, height, [
+        { indexed: openIndexed, delay: 500 },
+        { indexed: blinkIndexed, delay: 30 },
+        { indexed: openIndexed, delay: 300 },
+        { indexed: blinkIndexed, delay: 30 },
+      ]);
+      gifUrl = URL.createObjectURL(gifBlob);
+      gifActions.classList.add("visible");
+      setStatus(
+        `Done — exact 8.6s GIF • ${(gifBlob.size / 1024 / 1024).toFixed(1)} MB`,
+      );
+    } catch (error) {
+      console.error(error);
+      setStatus(error?.message || "The GIF export failed. Try smaller images.", true);
+    } finally {
+      gifButton.classList.remove("exporting");
+      updateGifButton();
+      gifProgress.textContent = "Rendering 0%";
+    }
+  }
+
+  function gifFile() {
+    return new File([gifBlob], "blinkcut-8.6s.gif", {
+      type: "image/gif",
+      lastModified: Date.now(),
+    });
+  }
+
+  function downloadGif() {
+    if (!gifUrl) return;
+    const link = document.createElement("a");
+    link.href = gifUrl;
+    link.download = "blinkcut-8.6s.gif";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  }
+
+  async function shareGif() {
+    if (!gifBlob) return;
+    const file = gifFile();
+    if (navigator.share && navigator.canShare?.({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: "BlinkCut GIF" });
+        setStatus("Share sheet opened. Choose Save Image on iPad.");
+        return;
+      } catch (error) {
+        if (error.name === "AbortError") return;
+      }
+    }
+    downloadGif();
+    setStatus("GIF downloaded.");
+  }
+
+  const observer = new MutationObserver(() => {
+    resetGif();
+    updateGifButton();
+  });
+  observer.observe(openDropzone, { attributes: true, attributeFilter: ["class"] });
+  observer.observe(blinkDropzone, { attributes: true, attributeFilter: ["class"] });
+  gifButton.addEventListener("click", createGif);
+  gifShareButton.addEventListener("click", shareGif);
+  gifDownloadButton.addEventListener("click", downloadGif);
+  window.addEventListener("beforeunload", () => gifUrl && URL.revokeObjectURL(gifUrl));
+  updateGifButton();
+})();
 </script>
 </body>
 </html>
